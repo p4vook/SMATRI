@@ -1,0 +1,8 @@
+[package]
+name = "smatri-server"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+ohttp = { version = "0.7", features = ["server"] }
+hpke = { version = "0.13" }
