@@ -27,6 +27,7 @@
           pkgs.wabt
           pkgs.rust-analyzer
           pkgs.typescript-language-server
+          pkgs.sqlite
         ];
       };
     };
