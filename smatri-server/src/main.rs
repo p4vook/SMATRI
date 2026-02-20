@@ -1,17 +1,9 @@
 mod util;
 
-use axum::{
-    routing,
-    Router,
-    Json,
-    extract::{State}
-};
+use axum::{Json, Router, extract::State, routing};
 use http::StatusCode;
-use serde::{
-    Serialize,
-    Deserialize
-};
 use rusqlite;
+use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
 
 type RecepientID = String;
@@ -19,69 +11,87 @@ type RecepientID = String;
 #[derive(Clone, Serialize, Deserialize)]
 struct Message {
     recipient: RecepientID,
-    text: String
+    text: String,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
 struct ReceiveRequest {
-    recipient: RecepientID
+    recipient: RecepientID,
 }
 
 #[derive(Clone)]
 struct AppState {
-    connection: Arc<Mutex<rusqlite::Connection>>
+    connection: Arc<Mutex<rusqlite::Connection>>,
 }
 
 impl AppState {
     fn new() -> Self {
         Self {
             connection: Arc::new(Mutex::new(
-                rusqlite::Connection::open("testing.sqlite").unwrap()))
+                rusqlite::Connection::open("testing.sqlite").unwrap(),
+            )),
         }
     }
 
     fn init(self: &mut AppState) -> Result<(), rusqlite::Error> {
-        self.connection.lock().unwrap().execute(
-            "CREATE TABLE IF NOT EXISTS message (
+        self.connection
+            .lock()
+            .unwrap()
+            .execute(
+                "CREATE TABLE IF NOT EXISTS message (
                 id          INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                 recipient   BLOB NOT NULL,
                 content     BLOB NOT NULL
             )",
-            (),
-        ).map(|_| ())
+                (),
+            )
+            .map(|_| ())
     }
 }
 
-async fn send_message(State(state): State<AppState>, message: Json<Message>) -> (StatusCode, String) {
+async fn send_message(
+    State(state): State<AppState>,
+    message: Json<Message>,
+) -> (StatusCode, String) {
     match state.connection.lock().unwrap().execute(
         "INSERT INTO message (recipient, content) VALUES (?1, ?2)",
         (&message.recipient, &message.text),
     ) {
         Ok(_) => (StatusCode::OK, String::new()),
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("error while inserting: {}", e))
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("error while inserting: {}", e),
+        ),
     }
 }
 
-async fn receive_messages(State(state): State<AppState>, receive_request: Json<ReceiveRequest>) -> Result<Json<Vec<String>>, (StatusCode, String)> {
+async fn receive_messages(
+    State(state): State<AppState>,
+    receive_request: Json<ReceiveRequest>,
+) -> Result<Json<Vec<String>>, (StatusCode, String)> {
     (|| {
         let conn = state.connection.lock().unwrap();
 
-        let mut stmt = conn.prepare(
-            "SELECT content FROM message WHERE recipient = ?1",
-        )?;
-        
+        let mut stmt = conn.prepare("SELECT content FROM message WHERE recipient = ?1")?;
+
         let rows = stmt.query_map(
             [receive_request.recipient.as_str()],
-            |row| -> Result<String, _> { row.get(0) }
+            |row| -> Result<String, _> { row.get(0) },
         )?;
 
         let mut contents = Vec::new();
         for content in rows {
             contents.push(content?);
         }
-        
+
         Ok(Json(contents))
-    })().map_err(|e: rusqlite::Error| (StatusCode::INTERNAL_SERVER_ERROR, format!("error while querying: {}", e)))
+    })()
+    .map_err(|e: rusqlite::Error| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("error while querying: {}", e),
+        )
+    })
 }
 
 #[tokio::main]
@@ -98,7 +108,5 @@ async fn main() {
         .await
         .unwrap();
 
-    axum::serve(listener, app)
-        .await
-        .unwrap();
+    axum::serve(listener, app).await.unwrap();
 }

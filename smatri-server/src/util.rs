@@ -1,19 +1,13 @@
-use tower::{Service, Layer};
-use std::{
-    sync::{
-        Arc,
-        Mutex
-    },
-    task::{
-        Poll,
-        Context
-    }
-};
 use http::{Request, Response};
+use std::{
+    sync::{Arc, Mutex},
+    task::{Context, Poll},
+};
+use tower::{Layer, Service};
 
 #[derive(Clone)]
 pub struct OhttpLayer {
-    ohttp_server: Arc<Mutex<i32>>
+    ohttp_server: Arc<Mutex<i32>>,
 }
 
 impl OhttpLayer {
@@ -22,14 +16,13 @@ impl OhttpLayer {
     }
 }
 
-impl<S> Layer<S> for OhttpLayer
-{
+impl<S> Layer<S> for OhttpLayer {
     type Service = OhttpService<S>;
 
     fn layer(&self, inner: S) -> Self::Service {
         OhttpService {
             inner,
-            ohttp_server: self.ohttp_server.clone()
+            ohttp_server: self.ohttp_server.clone(),
         }
     }
 }
@@ -37,12 +30,12 @@ impl<S> Layer<S> for OhttpLayer
 #[derive(Clone)]
 pub struct OhttpService<S> {
     inner: S,
-    ohttp_server: Arc<Mutex<i32>>
+    ohttp_server: Arc<Mutex<i32>>,
 }
 
 impl<ReqBody, ResBody, S> Service<Request<ReqBody>> for OhttpService<S>
 where
-    S: Service<Request<ReqBody>, Response = Response<ResBody>>
+    S: Service<Request<ReqBody>, Response = Response<ResBody>>,
 {
     type Response = S::Response;
     type Error = S::Error;
