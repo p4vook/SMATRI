@@ -18,7 +18,9 @@
           pkgs.cmake
           llvm.clang-tools
           llvm.lld
+          pkgs.binaryen
           pkgs.cargo
+          pkgs.rustfmt
           pkgs.rustc
           pkgs.wasm-pack
           pkgs.wasm-bindgen-cli
@@ -28,6 +30,7 @@
           pkgs.rust-analyzer
           pkgs.typescript-language-server
           pkgs.sqlite
+          pkgs.dioxus-cli
         ];
       };
     };

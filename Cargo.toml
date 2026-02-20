@@ -1,7 +1,6 @@
 [workspace]
 resolver = "2"
-targets = [
+members = [
   "smatri-client",
   "smatri-server"
 ]
-members = ["smatri-client", "smatri-server"]
